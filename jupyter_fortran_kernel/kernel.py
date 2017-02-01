@@ -8,6 +8,14 @@ import os
 import os.path as path
 
 
+def _fix_rpath_conda():
+    conda_prefix = os.getenv('CONDA_PREFIX')
+    if conda_prefix:
+        return '-Wl,-rpath,{}/lib'.format(conda_prefix)
+    else:
+        return ''
+
+
 class RealTimeSubprocess(subprocess.Popen):
     """
     A subprocess that allows to read its stdout and stderr in real time
@@ -107,7 +115,8 @@ class FortranKernel(Kernel):
                                   lambda contents: self._write_to_stderr(contents.decode()))
 
     def compile_with_gfortran(self, source_filename, binary_filename):
-        args = ['gfortran', source_filename, '-std=f2008', '-o', binary_filename]
+        args = ['gfortran', source_filename, '-std=f2008',
+                _fix_rpath_conda(), '-o', binary_filename]
         return self.create_jupyter_subprocess(args)
 
     def do_execute(self, code, silent, store_history=True,
